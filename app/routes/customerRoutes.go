@@ -19,6 +19,7 @@ func CustomerRoutes(router *gin.RouterGroup, db *sql.DB) {
 
 	{
 		router.POST("/customer", customerController.CreateNewCustomer)
+		router.POST("/login", customerController.CustomerLogin)
 	}
 
 }

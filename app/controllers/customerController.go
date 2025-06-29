@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sasinduNanayakkara/loyalty-backend/app/dtos"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/services"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/utils"
@@ -36,4 +37,25 @@ func (cc *CustomerController) CreateNewCustomer(c *gin.Context) {
 	log.Printf("%s : New customer created with ID: %s", sessionId, customer.ID)
 
 	c.JSON(200, gin.H{"message": "New customer created successfully"})
+}
+
+func (cc *CustomerController) CustomerLogin(c *gin.Context) {
+
+	var sessionId = utils.GenerateSessionId()
+
+	var loginDto dtos.LoginDto
+	if err := c.ShouldBindJSON(&loginDto); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	loginResponse, err := cc.customerService.CustomerLogin(loginDto, sessionId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to login"})
+		return
+	}
+
+	log.Printf("%s : Customer login successful: %s", sessionId, loginResponse)
+
+	c.JSON(200, gin.H{"message": "Customer login successful", "data": loginResponse})
 }

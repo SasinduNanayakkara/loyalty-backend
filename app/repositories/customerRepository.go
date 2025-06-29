@@ -43,3 +43,20 @@ func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *models.Lo
 	log.Printf("%s : New loyalty customer created with ID: %s", sessionId, customerLoyalty.LoyaltyID)
 	return nil
 }
+
+func (r *CustomerRepository) GetCustomerByEmail(email string, sessionId string) (*models.Customer, error) {
+	var customer models.Customer
+	result := config.DB.First(&customer, "email = ?", email)
+	if result.Error != nil {
+		log.Printf("%s : Error fetching customer by email: %v", sessionId, result.Error)
+		return nil, result.Error
+	}
+
+	if customer.ID == "" {
+		log.Printf("%s : No customer found with email: %s", sessionId, email)
+		return nil, sql.ErrNoRows
+	}
+
+	log.Printf("%s : Customer found - ID: %s, Email: %s, Password length: %d", sessionId, customer.ID, customer.Email, len(customer.Password))
+	return &customer, nil
+}
