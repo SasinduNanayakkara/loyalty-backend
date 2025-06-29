@@ -1,10 +1,12 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/routes"
 	"github.com/sasinduNanayakkara/loyalty-backend/config"
 )
+var db *sql.DB
 
 func init() {
 	config.LoadEnv()
@@ -19,10 +21,8 @@ func main() {
 			"message": "Loyalty Backend is up and running",
 		})
 	})
-
 	api := router.Group("/api/v1")
-
-	routes.CustomerRoutes(api)
+	routes.CustomerRoutes(api, db)
 
 	router.Run()
 }

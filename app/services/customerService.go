@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/repositories"
+	"github.com/sasinduNanayakkara/loyalty-backend/app/utils"
 )
 
 type LoyaltyAppServiceInterface interface {
@@ -21,6 +22,9 @@ func NewCustomerService(repo repositories.CustomerRepository, loyaltyService Loy
 
 func (s *CustomerService) CreateNewCustomer(customer models.Customer, sessionId string) error {
 	
+	customer.ID = sessionId
+	customer.Password = utils.GenerateHashedPassword(customer.Password)
+
 	if error := s.repo.CreateNewCustomerRepository(customer, sessionId); error != nil {
 		return error
 	}
@@ -33,7 +37,7 @@ func (s *CustomerService) CreateNewCustomer(customer models.Customer, sessionId 
 	var loyaltyAccount *models.LoyaltyAccountResponseModel
 
 	if loyaltyCustomer != "" {
-		loyaltyAccount, err = s.loyaltyService.CreateNewLoyaltyAccount(loyaltyCustomer, customer.PhoneNumber, sessionId)
+		loyaltyAccount, err = s.loyaltyService.CreateNewLoyaltyAccount(loyaltyCustomer, customer.Phone_number, sessionId)
 		if err != nil {
 			return err
 		}

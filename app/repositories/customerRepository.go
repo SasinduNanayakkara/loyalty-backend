@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
+	"github.com/sasinduNanayakkara/loyalty-backend/config"
 )
 
 type CustomerRepository struct {
@@ -17,29 +18,28 @@ func NewCustomerRepository(db *sql.DB) *CustomerRepository {
 
 func (r *CustomerRepository) CreateNewCustomerRepository(customer models.Customer, sessionId string) error {
 
-	query := "INSERT INTO CUSTOMER (ID, NAME, EMAIL, PHONE) VALUES (?, ?, ?, ?)"
-	result, err := r.db.Exec(query, customer.ID, customer.Name, customer.Email, customer.PhoneNumber)
-
-	if err != nil {
-		return err
+	result := config.DB.Create(&customer)
+	if result.Error != nil {
+		log.Printf("%s : Error creating new customer: %v", sessionId, result.Error)
+		return result.Error
 	}
-
-	userId, err := result.LastInsertId()
-
-	log.Printf("%s : New customer created with ID: %d", sessionId, userId)
-	
-	if err != nil {
-		return err
-	}
-
+	log.Printf("%s : New customer created with ID: %s", sessionId, customer.ID)
 	return nil
+
 }
 
-func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *models.LoyaltyAccountResponseModel, customerId string, sessionId string) error { 
-	query := "INSERT INTO CUSTOMER_LOYALTY (ID, LOYALTY_CUSTOMER_ID, BALANCE) VALUES (?, ?, ?)"
-	_, err := r.db.Exec(query, customerId, loyaltyCustomer.LoyaltyAccount.ID, loyaltyCustomer.LoyaltyAccount.Balance)
-	if err != nil {
-		return err
+func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *models.LoyaltyAccountResponseModel, customerId string, sessionId string) error {
+	
+	customerLoyalty := models.CustomerLoyalty{
+		CustomerID: customerId,
+		LoyaltyID: loyaltyCustomer.LoyaltyAccount.ID,		
+		Balance: loyaltyCustomer.LoyaltyAccount.Balance,
 	}
+	result := config.DB.Create(&customerLoyalty)
+	if result.Error != nil {
+		log.Printf("%s : Error creating new loyalty customer: %v", sessionId, result.Error)
+		return result.Error
+	}
+	log.Printf("%s : New loyalty customer created with ID: %s", sessionId, customerLoyalty.LoyaltyID)
 	return nil
 }

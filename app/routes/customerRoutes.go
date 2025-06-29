@@ -17,9 +17,8 @@ func CustomerRoutes(router *gin.RouterGroup, db *sql.DB) {
 	customerService := services.NewCustomerService(customerRepoInterface, loyaltyAppService)
 	customerController := controllers.NewCustomerController(customerService)
 
-	v1 := router.Group("/api/v1")
 	{
-		v1.POST("/customer", customerController.CreateNewCustomer)
+		router.POST("/customer", customerController.CreateNewCustomer)
 	}
 
 }
