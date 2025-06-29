@@ -7,4 +7,5 @@ type TransactionDto struct {
 	Currency   string `json:"currency" validate:"required"`
 	Quantity   int    `json:"quantity" validate:"required"`
 	LoyaltyAccountId string `json:"loyalty_account_id" validate:"required"`
+	OrderId    string `json:"order_id" validate:"required"`
 }

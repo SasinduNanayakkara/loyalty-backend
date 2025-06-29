@@ -25,6 +25,7 @@ var loyaltyAccessToken string
 var squareVersion string
 var loyaltyProgramId string
 var loyaltyLocationId string
+var sourceId string = "cnon:card-nonce-ok"
 
 func init() {
 	loyaltyBaseUrl = os.Getenv("LOYALTY_API_URL")
@@ -280,4 +281,55 @@ func (s *LoyaltyAppService) AccumulateLoyaltyPoints(orderId string, loyaltyId st
 	}
 
 	return accumulateResponse, nil
+}
+
+func (s *LoyaltyAppService) MakePayment(transactionDto dtos.TransactionDto, sessionId string) error {
+
+	body := map[string]interface{}{
+		"idempotency_key": sessionId,
+		"source_id":       sourceId,
+		"order_id":       transactionDto.OrderId,
+		"customer_id":    transactionDto.LoyaltyAccountId,
+		"amount_money": map[string]interface{}{
+			"amount":   transactionDto.Amount,
+			"currency": transactionDto.Currency,
+		},
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("%s : Error marshalling payment request body: %v", sessionId, err)
+		return err
+	}
+
+	httpReq, err := http.NewRequest("POST", loyaltyBaseUrl+"/payments", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		log.Printf("%s : Error creating new payment request: %v", sessionId, err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
+	httpReq.Header.Set("Square-Version", squareVersion)
+	client := &http.Client{}
+
+	response, err := client.Do(httpReq)
+	if err != nil {
+		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
+		return err
+	}
+	defer response.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("%s : Error reading response body: %v", sessionId, err)
+		return err
+	}
+
+	log.Printf("%s : Payment API response: %s", sessionId, string(responseBody))
+	if response.StatusCode != http.StatusOK {
+		log.Printf("%s : Error making payment: %s", sessionId, responseBody)
+		return fmt.Errorf("error making payment: %s", responseBody)
+	}
+
+	return nil
 }
