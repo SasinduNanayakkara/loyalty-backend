@@ -6,13 +6,14 @@ import (
 
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
 	"github.com/sasinduNanayakkara/loyalty-backend/config"
+	"gorm.io/gorm"
 )
 
 type CustomerRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewCustomerRepository(db *sql.DB) *CustomerRepository {
+func NewCustomerRepository(db *gorm.DB) *CustomerRepository {
 	return &CustomerRepository{db: db}
 }
 

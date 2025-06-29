@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/sasinduNanayakkara/loyalty-backend/app/dtos"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
 )
 
@@ -23,6 +24,7 @@ var loyaltyBaseUrl string
 var loyaltyAccessToken string
 var squareVersion string
 var loyaltyProgramId string
+var loyaltyLocationId string
 
 func init() {
 	loyaltyBaseUrl = os.Getenv("LOYALTY_API_URL")
@@ -41,6 +43,11 @@ func init() {
 	if loyaltyProgramId == "" {
 		loyaltyProgramId = "7e3874a3-6f99-42b4-8a4b-a3c69af5c106"
 	}
+
+	loyaltyLocationId = os.Getenv("LOYALTY_LOCATION_ID")
+	if loyaltyLocationId == "" {
+		loyaltyLocationId = "L0B21CBE1A66C"
+	} 
 }
 
 func (s *LoyaltyAppService) CreateNewLoyaltyCustomer(customer models.Customer, sessionId string) (string, error) {
@@ -155,4 +162,122 @@ func (s *LoyaltyAppService) CreateNewLoyaltyAccount(customerLoyaltyId string, ph
 	}
 
 	return &accountResponse, nil
+}
+
+func (s *LoyaltyAppService) CreateNewOrder(transactionDto dtos.TransactionDto, sessionId string) (string, error) {
+
+	body := map[string]interface{}{
+		"idempotency_key": sessionId,
+		"order": map[string]interface{}{
+			"location_id": loyaltyLocationId,
+			"line_items": []map[string]interface{}{
+				{
+					"quantity": transactionDto.Quantity,
+					"name":     transactionDto.Description,
+					"base_price_money": map[string]interface{}{
+						"amount":   transactionDto.Amount,
+						"currency": transactionDto.Currency,
+					},
+				},
+			},
+		},
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("%s : Error marshalling order request body: %v", sessionId, err)
+		return "", err
+	}
+
+	httpReq, err := http.NewRequest("POST", loyaltyBaseUrl+"/orders", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		log.Printf("%s : Error creating new order request: %v", sessionId, err)
+		return "", err
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
+	httpReq.Header.Set("Square-Version", squareVersion)
+	client := &http.Client{}
+
+	response, err := client.Do(httpReq)
+	if err != nil {
+		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
+		return "", err
+	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("%s : Error reading response body: %v", sessionId, err)
+		return "", err
+	}
+
+	log.Printf("%s : Order creation API response: %s", sessionId, string(responseBody))
+	if response.StatusCode != http.StatusOK {
+		log.Printf("%s : Error creating order: %s", sessionId, responseBody)
+		return "", fmt.Errorf("error creating order: %s", responseBody)
+	}
+
+	var orderResponse dtos.LoyaltyOrderResponseDto
+	if err := json.Unmarshal(responseBody, &orderResponse); err != nil {
+		log.Printf("%s : Error unmarshalling order response: %v", sessionId, err)
+		return "", err
+	}
+
+	return orderResponse.Id, nil
+}
+
+func (s *LoyaltyAppService) AccumulateLoyaltyPoints(orderId string, loyaltyId string, sessionId string) (dtos.AccumulateLoyaltyResponseDto, error) {
+
+	body := map[string]interface{}{
+		"idempotency_key": sessionId,
+		"accumulate_points": map[string]interface{}{
+			"order_id": orderId,
+		},
+		"location_id": loyaltyLocationId,
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("%s : Error marshalling accumulate points request body: %v", sessionId, err)
+		return dtos.AccumulateLoyaltyResponseDto{}, err
+	}
+	httpReq, err := http.NewRequest("POST", loyaltyBaseUrl+"/loyalty/accounts/"+loyaltyId+"/accumulate", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		log.Printf("%s : Error creating accumulate points request: %v", sessionId, err)
+		return dtos.AccumulateLoyaltyResponseDto{}, err
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
+	httpReq.Header.Set("Square-Version", squareVersion)
+	client := &http.Client{}
+
+	response, err := client.Do(httpReq)
+	if err != nil {
+		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
+		return dtos.AccumulateLoyaltyResponseDto{}, err
+	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("%s : Error reading response body: %v", sessionId, err)
+		return dtos.AccumulateLoyaltyResponseDto{}, err
+	}
+
+	log.Printf("%s : Accumulate points API response: %s", sessionId, string(responseBody))
+	if response.StatusCode != http.StatusOK {
+		log.Printf("%s : Error accumulating loyalty points: %s", sessionId, responseBody)
+		return dtos.AccumulateLoyaltyResponseDto{}, fmt.Errorf("error accumulating loyalty points: %s", responseBody)
+	}
+
+	var accumulateResponse dtos.AccumulateLoyaltyResponseDto
+	if err := json.Unmarshal(responseBody, &accumulateResponse); err != nil {
+		log.Printf("%s : Error unmarshalling accumulate points response: %v", sessionId, err)
+		return dtos.AccumulateLoyaltyResponseDto{}, err
+	}
+
+	return accumulateResponse, nil
 }
