@@ -2,6 +2,7 @@ package services
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/sasinduNanayakkara/loyalty-backend/app/dtos"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
@@ -67,6 +68,11 @@ func (s *TransactionService) CreateTransaction(transactionDto dtos.TransactionDt
 		log.Printf("%s : Error getting accumulated points: %v", sessionId, err)
 		return models.Transaction{}, err
 	}
+	quantityInt, err := strconv.Atoi(transactionDto.Quantity)
+	if err != nil {
+		log.Printf("%s : Error converting quantity to int: %v", sessionId, err)
+		return models.Transaction{}, err
+	}
 
 	transactionModel := &models.Transaction{
 		ID:          sessionId,
@@ -74,10 +80,11 @@ func (s *TransactionService) CreateTransaction(transactionDto dtos.TransactionDt
 		Amount:      transactionDto.Amount,
 		Description: transactionDto.Description,
 		Currency:    transactionDto.Currency,
-		Quantity:    transactionDto.Quantity,
+		Quantity:    quantityInt,
 		LoyaltyAccountId: transactionDto.LoyaltyAccountId,
 		OrderId:   orderId,
 	}
+	
 	_, err = s.repo.CreateTransaction(*transactionModel, sessionId)
 	if err != nil {
 		log.Printf("%s : Error creating transaction: %v", sessionId, err)

@@ -30,10 +30,10 @@ func (r *CustomerRepository) CreateNewCustomerRepository(customer models.Custome
 }
 
 func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *models.LoyaltyAccountResponseModel, customerId string, sessionId string) error {
-	
+
 	customerLoyalty := models.CustomerLoyalty{
 		CustomerID: customerId,
-		LoyaltyID: loyaltyCustomer.LoyaltyAccount.ID,		
+		LoyaltyID: loyaltyCustomer.LoyaltyAccount.ID,
 		Balance: loyaltyCustomer.LoyaltyAccount.Balance,
 	}
 	result := config.DB.Create(&customerLoyalty)

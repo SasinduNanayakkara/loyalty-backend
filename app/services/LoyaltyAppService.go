@@ -171,6 +171,7 @@ func (s *LoyaltyAppService) CreateNewOrder(transactionDto dtos.TransactionDto, s
 		"idempotency_key": sessionId,
 		"order": map[string]interface{}{
 			"location_id": loyaltyLocationId,
+			"customer_id": transactionDto.LoyaltyAccountId,
 			"line_items": []map[string]interface{}{
 				{
 					"quantity": transactionDto.Quantity,
@@ -185,6 +186,7 @@ func (s *LoyaltyAppService) CreateNewOrder(transactionDto dtos.TransactionDto, s
 	}
 
 	bodyBytes, err := json.Marshal(body)
+	log.Printf("%s : Creating new order for transaction: %s", sessionId, bodyBytes)
 	if err != nil {
 		log.Printf("%s : Error marshalling order request body: %v", sessionId, err)
 		return "", err
@@ -220,13 +222,14 @@ func (s *LoyaltyAppService) CreateNewOrder(transactionDto dtos.TransactionDto, s
 		return "", fmt.Errorf("error creating order: %s", responseBody)
 	}
 
-	var orderResponse dtos.LoyaltyOrderResponseDto
+	var orderResponse dtos.LoyaltyOrderWrapper
 	if err := json.Unmarshal(responseBody, &orderResponse); err != nil {
 		log.Printf("%s : Error unmarshalling order response: %v", sessionId, err)
 		return "", err
 	}
+	log.Printf("%s : New order created with ID: %s", sessionId, orderResponse.Order.Id)
 
-	return orderResponse.Id, nil
+	return orderResponse.Order.Id, nil
 }
 
 func (s *LoyaltyAppService) AccumulateLoyaltyPoints(orderId string, loyaltyId string, sessionId string) (dtos.AccumulateLoyaltyResponseDto, error) {
