@@ -43,3 +43,26 @@ func (tc *TransactionController) CreateTransaction(c *gin.Context) {
 
 	c.JSON(200, gin.H{"message": "Transaction created successfully", "data": transaction})
 }
+
+func (tc *TransactionController) RedeemLoyaltyPoints(c *gin.Context) {
+	var sessionId = utils.GenerateSessionId()
+	var redeemDto dtos.LoyaltyRewardDto
+	if err := c.ShouldBindJSON(&redeemDto); err != nil {
+		log.Printf("%s : Error binding JSON: %v", sessionId, err)
+		c.JSON(400, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	log.Printf("%s : CustomerId: '%s' (length: %d)", sessionId, redeemDto.CustomerId, len(redeemDto.CustomerId))
+
+	rewardPoints, err := tc.transactionService.RedeemLoyaltyPoints(redeemDto, sessionId)
+	if err != nil {
+		log.Printf("%s : Error redeeming loyalty points: %v", sessionId, err)
+		c.JSON(400, gin.H{"error": "Failed to redeem loyalty points" + ": " + err.Error()})
+		return
+	}
+
+	log.Printf("%s : Loyalty points redeemed successfully: %d", sessionId, rewardPoints)
+
+	c.JSON(200, gin.H{"message": "Loyalty points redeemed successfully", "data": rewardPoints})
+}

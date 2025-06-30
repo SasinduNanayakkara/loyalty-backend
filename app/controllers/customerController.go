@@ -59,3 +59,43 @@ func (cc *CustomerController) CustomerLogin(c *gin.Context) {
 
 	c.JSON(200, gin.H{"message": "Customer login successful", "data": loginResponse})
 }
+
+func (cc *CustomerController) GetCustomerLoyaltyAccount(c *gin.Context) {
+	var sessionId = utils.GenerateSessionId()
+
+	loyaltyId := c.Param("loyaltyId")
+	if loyaltyId == "" {
+		c.JSON(400, gin.H{"error": "Loyalty ID is required"})
+		return
+	}
+
+	loyaltyAccount, err := cc.customerService.GetCustomerLoyaltyAccount(loyaltyId, sessionId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to get customer loyalty account"})
+		return
+	}
+
+	log.Printf("%s : Customer loyalty account retrieved successfully: %v", sessionId, loyaltyAccount)
+
+	c.JSON(200, gin.H{"message": "Customer loyalty account retrieved successfully", "data": loyaltyAccount})
+}
+
+func (cc *CustomerController) GetCustomerTransactionHistory(c *gin.Context) {
+	var sessionId = utils.GenerateSessionId()
+
+	customerId := c.Param("customerId")
+	if customerId == "" {
+		c.JSON(400, gin.H{"error": "Customer ID is required"})
+		return
+	}
+
+	transactionHistory, err := cc.customerService.GetCustomerTransactionHistory(customerId, sessionId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to get customer transaction history"})
+		return
+	}
+
+	log.Printf("%s : Customer transaction history retrieved successfully: %v", sessionId, transactionHistory)
+
+	c.JSON(200, gin.H{"message": "Customer transaction history retrieved successfully", "data": transactionHistory})
+}

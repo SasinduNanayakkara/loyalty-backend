@@ -20,15 +20,17 @@ func init() {
 type LoyaltyAppServiceInterface interface {
 	CreateNewLoyaltyCustomer(customer models.Customer, sessionId string) (string, error)
 	CreateNewLoyaltyAccount(loyaltyCustomerId string, phoneNumber string, sessionId string) (*models.LoyaltyAccountResponseModel, error)
+	GetLoyaltyAccount(loyaltyId string, sessionId string) (*models.LoyaltyAccountResponseModel, error)
 }
 
 type CustomerService struct {
 	repo           repositories.CustomerRepository
 	loyaltyService LoyaltyAppServiceInterface
+	transactionRepo repositories.TransactionRepository
 }
 
-func NewCustomerService(repo repositories.CustomerRepository, loyaltyService LoyaltyAppServiceInterface) *CustomerService {
-	return &CustomerService{repo: repo, loyaltyService: loyaltyService}
+func NewCustomerService(repo repositories.CustomerRepository, loyaltyService LoyaltyAppServiceInterface, transactionRepo repositories.TransactionRepository) *CustomerService {
+	return &CustomerService{repo: repo, loyaltyService: loyaltyService, transactionRepo: transactionRepo}
 }
 
 func (s *CustomerService) CreateNewCustomer(customer models.Customer, sessionId string) error {
@@ -102,4 +104,30 @@ func (s *CustomerService) CustomerLogin(loginDto dtos.LoginDto, sessionId string
 
 	log.Printf("%s : Customer login successful: %s", sessionId, loginResponse)
 	return loginResponse, nil
+}
+
+func (s *CustomerService) GetCustomerLoyaltyAccount(customerId string, sessionId string) (*models.LoyaltyAccountResponseModel, error) {
+
+	customerLoyaltyId, err := s.transactionRepo.GetCustomerLoyaltyId(customerId, sessionId)
+	if err != nil {
+		return nil, err
+	}
+
+	loyaltyAccount, err := s.loyaltyService.GetLoyaltyAccount(customerLoyaltyId, sessionId)
+	if err != nil {
+		return nil, err
+	}
+
+	return loyaltyAccount, nil
+}
+
+func (s *CustomerService) GetCustomerTransactionHistory(customerId string, sessionId string) (*models.Transaction, error) {
+
+	customerHistory, err := s.transactionRepo.GetCustomerTransactionHistory(customerId, sessionId)
+	if err != nil {
+		log.Printf("%s : Error fetching customer transaction history: %v", sessionId, err)
+		return nil, err
+	}
+
+	return customerHistory, nil
 }

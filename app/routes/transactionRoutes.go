@@ -18,4 +18,5 @@ func TransactionRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	transactionController := controllers.NewTransactionController(*transactionService)
 
 	router.POST("/transaction", transactionController.CreateTransaction)
+	router.POST("/redeem", transactionController.RedeemLoyaltyPoints)
 }

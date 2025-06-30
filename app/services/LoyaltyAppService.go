@@ -26,6 +26,7 @@ var squareVersion string
 var loyaltyProgramId string
 var loyaltyLocationId string
 var sourceId string = "cnon:card-nonce-ok"
+var rewardTierId string = "647ed5d4-512f-4c01-9fd6-67b63c4bb0a2"
 
 func init() {
 	loyaltyBaseUrl = os.Getenv("LOYALTY_API_URL")
@@ -335,4 +336,100 @@ func (s *LoyaltyAppService) MakePayment(transactionDto dtos.TransactionDto, sess
 	}
 
 	return nil
+}
+
+func (s *LoyaltyAppService) CreateLoyaltyReward(customerLoyaltyId string, orderId string, sessionId string) (int, error) {
+
+	body := map[string]interface{}{
+		"idempotency_key": sessionId,
+		"reward": map[string]interface{}{
+			"loyalty_account_id": customerLoyaltyId,
+			"reward_tier_id": rewardTierId,
+			"order_id": orderId,
+		},
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("%s : Error marshalling loyalty reward request body: %v", sessionId, err)
+		return 0, err
+	}
+
+	httpReq, err := http.NewRequest("POST", loyaltyBaseUrl+"/loyalty/rewards", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		log.Printf("%s : Error creating loyalty reward request: %v", sessionId, err)
+		return 0, err
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
+	httpReq.Header.Set("Square-Version", squareVersion)
+	client := &http.Client{}
+
+	response, err := client.Do(httpReq)
+	if err != nil {
+		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
+		return 0, err
+	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("%s : Error reading response body: %v", sessionId, err)
+		return 0, err
+	}
+
+	log.Printf("%s : Loyalty reward API response: %s", sessionId, string(responseBody))
+	if response.StatusCode != http.StatusOK {
+		log.Printf("%s : Error creating loyalty reward: %s", sessionId, responseBody)
+		return 0, fmt.Errorf("error creating loyalty reward: %s", responseBody)
+	}
+
+	loyaltyRewardResponse := dtos.LoyaltyRewardResponseDto{}
+	if err := json.Unmarshal(responseBody, &loyaltyRewardResponse); err != nil {
+		log.Printf("%s : Error unmarshalling loyalty reward response: %v", sessionId, err)
+		return 0, err
+	}
+
+	return loyaltyRewardResponse.Reward.Points, nil
+}
+
+func (s *LoyaltyAppService) GetLoyaltyAccount(loyaltyId string, sessionId string) (dtos.LoyaltyAccountResponseDto, error) {
+
+	httpReq, err := http.NewRequest("GET", loyaltyBaseUrl+"/loyalty/accounts/"+loyaltyId, nil)
+	if err != nil {
+		log.Printf("%s : Error creating get loyalty account request: %v", sessionId, err)
+		return dtos.LoyaltyAccountResponseDto{}, err
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
+	httpReq.Header.Set("Square-Version", squareVersion)
+	client := &http.Client{}
+
+	response, err := client.Do(httpReq)
+	if err != nil {
+		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
+		return dtos.LoyaltyAccountResponseDto{}, err
+	}
+	defer response.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("%s : Error reading response body: %v", sessionId, err)
+		return dtos.LoyaltyAccountResponseDto{}, err
+	}
+
+	log.Printf("%s : Get loyalty account API response: %s", sessionId, string(responseBody))
+	if response.StatusCode != http.StatusOK {
+		log.Printf("%s : Error getting loyalty account: %s", sessionId, responseBody)
+		return dtos.LoyaltyAccountResponseDto{}, fmt.Errorf("error getting loyalty account: %s", responseBody)
+	}
+
+	loyaltyAccountResponse := dtos.LoyaltyAccountResponseDto{}
+	if err := json.Unmarshal(responseBody, &loyaltyAccountResponse); err != nil {
+		log.Printf("%s : Error unmarshalling loyalty account response: %v", sessionId, err)
+		return dtos.LoyaltyAccountResponseDto{}, err
+	}
+
+	return loyaltyAccountResponse, nil
 }

@@ -44,3 +44,23 @@ func (r *TransactionRepository) UpdateLoyaltyBalance(loyaltyId string, points in
 	log.Printf("%s : Loyalty balance updated for ID: %s", sessionId, loyaltyId)
 	return nil
 }
+
+func (r *TransactionRepository) ReduceLoyaltyPoints(loyaltyId string, sessionId string) (int, error) {
+	var points int
+	result := r.db.Exec("UPDATE CUSTOMER_LOYALTY SET BALANCE = BALANCE - ? WHERE LOYALTY_ID = ?", points, loyaltyId)
+	if err := result.Error; err != nil {
+		log.Printf("%s : Error reducing loyalty points: %v", sessionId, err)
+		return 0, err
+	}
+	return points, nil
+}
+
+func (r *TransactionRepository) GetCustomerTransactionHistory(customerId string, sessionId string) (*models.Transaction, error) {
+	var transactionHistory models.Transaction
+	err := r.db.Table("TRANSACTIONS").Where("CUSTOMER_ID = ?", customerId).Find(&transactionHistory).Error
+	if err != nil {
+		log.Printf("%s : Error fetching transaction history: %v", sessionId, err)
+		return nil, err
+	}
+	return &transactionHistory, nil
+}
