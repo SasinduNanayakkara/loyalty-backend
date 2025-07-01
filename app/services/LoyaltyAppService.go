@@ -34,22 +34,16 @@ func init() {
 		loyaltyBaseUrl = "https://connect.squareupsandbox.com/v2"
 	}
 	loyaltyAccessToken = os.Getenv("LOYALTY_ACCESS_TOKEN")
-	if loyaltyAccessToken == "" {
-		loyaltyAccessToken = "EAAAl46zVNOhYm5YeuDebadRdnrjDPyFtLBvEypBI8hPiNQa8JPPmTT_TOygGg6c"
-	}
+	
 	squareVersion = os.Getenv("SQUARE_VERSION")
 	if squareVersion == "" {
 		squareVersion = "2025-06-18"
 	}
 	loyaltyProgramId = os.Getenv("LOYALTY_PROGRAM_ID")
-	if loyaltyProgramId == "" {
-		loyaltyProgramId = "7e3874a3-6f99-42b4-8a4b-a3c69af5c106"
-	}
+	
 
 	loyaltyLocationId = os.Getenv("LOYALTY_LOCATION_ID")
-	if loyaltyLocationId == "" {
-		loyaltyLocationId = "L0B21CBE1A66C"
-	}
+	
 }
 
 func (s *LoyaltyAppService) CreateNewLoyaltyCustomer(customer models.Customer, sessionId string) (string, error) {
