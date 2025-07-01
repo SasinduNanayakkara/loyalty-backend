@@ -45,8 +45,8 @@ func (r *TransactionRepository) UpdateLoyaltyBalance(loyaltyId string, points in
 	return nil
 }
 
-func (r *TransactionRepository) ReduceLoyaltyPoints(loyaltyId string, sessionId string) (int, error) {
-	var points int
+func (r *TransactionRepository) ReduceLoyaltyPoints(loyaltyId string, points int, sessionId string) (int, error) {
+	
 	result := r.db.Exec("UPDATE CUSTOMER_LOYALTY SET BALANCE = BALANCE - ? WHERE LOYALTY_ID = ?", points, loyaltyId)
 	if err := result.Error; err != nil {
 		log.Printf("%s : Error reducing loyalty points: %v", sessionId, err)
@@ -55,12 +55,12 @@ func (r *TransactionRepository) ReduceLoyaltyPoints(loyaltyId string, sessionId 
 	return points, nil
 }
 
-func (r *TransactionRepository) GetCustomerTransactionHistory(customerId string, sessionId string) (*models.Transaction, error) {
-	var transactionHistory models.Transaction
-	err := r.db.Table("TRANSACTIONS").Where("CUSTOMER_ID = ?", customerId).Find(&transactionHistory).Error
+func (r *TransactionRepository) GetCustomerTransactionHistory(customerId string, sessionId string) ([]models.Transaction, error) {
+	var transactionHistory []models.Transaction
+	err := r.db.Table("TRANSACTION").Where("CUSTOMER_ID = ?", customerId).Find(&transactionHistory).Error
 	if err != nil {
 		log.Printf("%s : Error fetching transaction history: %v", sessionId, err)
 		return nil, err
 	}
-	return &transactionHistory, nil
+	return transactionHistory, nil
 }

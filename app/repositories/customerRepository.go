@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/sasinduNanayakkara/loyalty-backend/app/dtos"
 	"github.com/sasinduNanayakkara/loyalty-backend/app/models"
 	"github.com/sasinduNanayakkara/loyalty-backend/config"
 	"gorm.io/gorm"
@@ -29,7 +30,7 @@ func (r *CustomerRepository) CreateNewCustomerRepository(customer models.Custome
 
 }
 
-func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *models.LoyaltyAccountResponseModel, customerId string, sessionId string) error {
+func (r *CustomerRepository) CreateNewLoyaltyCustomer(loyaltyCustomer *dtos.LoyaltyAccountResponseDto, customerId string, sessionId string) error {
 
 	customerLoyalty := models.CustomerLoyalty{
 		CustomerID: customerId,

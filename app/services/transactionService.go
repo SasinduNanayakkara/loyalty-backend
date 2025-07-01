@@ -131,18 +131,18 @@ func (s *TransactionService) RedeemLoyaltyPoints(redeemDto dtos.LoyaltyRewardDto
 		return 0, err
 	}
 
-	_, err = s.repo.ReduceLoyaltyPoints(customerLoyaltyId, sessionId)
+	_, err = s.repo.ReduceLoyaltyPoints(customerLoyaltyId, points, sessionId)
 	if err != nil {
 		log.Printf("%s : Error reducing loyalty points: %v", sessionId, err)
 		return 0, err
 	}
 
 	//make the rest of the payment
-	err = s.loyaltyService.MakePayment(transactionDto, sessionId)
-	if err != nil {
-		log.Printf("%s : Error making payment: %v", sessionId, err)
-		return 0, err
-	}
+	// err = s.loyaltyService.MakePayment(transactionDto, sessionId)
+	// if err != nil {
+	// 	log.Printf("%s : Error making payment: %v", sessionId, err)
+	// 	return 0, err
+	// }
 
 	return points, nil
 }

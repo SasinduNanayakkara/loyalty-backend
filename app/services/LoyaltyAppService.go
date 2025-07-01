@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -49,7 +49,7 @@ func init() {
 	loyaltyLocationId = os.Getenv("LOYALTY_LOCATION_ID")
 	if loyaltyLocationId == "" {
 		loyaltyLocationId = "L0B21CBE1A66C"
-	} 
+	}
 }
 
 func (s *LoyaltyAppService) CreateNewLoyaltyCustomer(customer models.Customer, sessionId string) (string, error) {
@@ -83,7 +83,7 @@ func (s *LoyaltyAppService) CreateNewLoyaltyCustomer(customer models.Customer, s
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return "", err
@@ -106,7 +106,7 @@ func (s *LoyaltyAppService) CreateNewLoyaltyCustomer(customer models.Customer, s
 	return customerResponse.Customer.ID, nil
 }
 
-func (s *LoyaltyAppService) CreateNewLoyaltyAccount(customerLoyaltyId string, phoneNumber string, sessionId string) (*models.LoyaltyAccountResponseModel, error) {
+func (s *LoyaltyAppService) CreateNewLoyaltyAccount(customerLoyaltyId string, phoneNumber string, sessionId string) (*dtos.LoyaltyAccountResponseDto, error) {
 
 	body := map[string]interface{}{
 		"idempotency_key": sessionId,
@@ -143,7 +143,7 @@ func (s *LoyaltyAppService) CreateNewLoyaltyAccount(customerLoyaltyId string, ph
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return nil, err
@@ -156,7 +156,7 @@ func (s *LoyaltyAppService) CreateNewLoyaltyAccount(customerLoyaltyId string, ph
 		return nil, fmt.Errorf("error creating loyalty account: %s", responseBody)
 	}
 
-	var accountResponse models.LoyaltyAccountResponseModel
+	var accountResponse dtos.LoyaltyAccountResponseDto
 
 	if err := json.Unmarshal(responseBody, &accountResponse); err != nil {
 		log.Printf("%s : Error unmarshalling loyalty account response: %v", sessionId, err)
@@ -211,7 +211,7 @@ func (s *LoyaltyAppService) CreateNewOrder(transactionDto dtos.TransactionDto, s
 	}
 
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return "", err
@@ -266,7 +266,7 @@ func (s *LoyaltyAppService) AccumulateLoyaltyPoints(orderId string, loyaltyId st
 	}
 
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return dtos.AccumulateLoyaltyResponseDto{}, err
@@ -292,8 +292,8 @@ func (s *LoyaltyAppService) MakePayment(transactionDto dtos.TransactionDto, sess
 	body := map[string]interface{}{
 		"idempotency_key": sessionId,
 		"source_id":       sourceId,
-		"order_id":       transactionDto.OrderId,
-		"customer_id":    transactionDto.LoyaltyAccountId,
+		"order_id":        transactionDto.OrderId,
+		"customer_id":     transactionDto.LoyaltyAccountId,
 		"amount_money": map[string]interface{}{
 			"amount":   transactionDto.Amount,
 			"currency": transactionDto.Currency,
@@ -323,7 +323,7 @@ func (s *LoyaltyAppService) MakePayment(transactionDto dtos.TransactionDto, sess
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return err
@@ -344,8 +344,8 @@ func (s *LoyaltyAppService) CreateLoyaltyReward(customerLoyaltyId string, orderI
 		"idempotency_key": sessionId,
 		"reward": map[string]interface{}{
 			"loyalty_account_id": customerLoyaltyId,
-			"reward_tier_id": rewardTierId,
-			"order_id": orderId,
+			"reward_tier_id":     rewardTierId,
+			"order_id":           orderId,
 		},
 	}
 
@@ -373,7 +373,7 @@ func (s *LoyaltyAppService) CreateLoyaltyReward(customerLoyaltyId string, orderI
 	}
 
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
 		return 0, err
@@ -390,16 +390,17 @@ func (s *LoyaltyAppService) CreateLoyaltyReward(customerLoyaltyId string, orderI
 		log.Printf("%s : Error unmarshalling loyalty reward response: %v", sessionId, err)
 		return 0, err
 	}
+	log.Printf("%s : Loyalty reward created with ID: %s", sessionId, loyaltyRewardResponse.Reward.ID)
 
 	return loyaltyRewardResponse.Reward.Points, nil
 }
 
-func (s *LoyaltyAppService) GetLoyaltyAccount(loyaltyId string, sessionId string) (dtos.LoyaltyAccountResponseDto, error) {
+func (s *LoyaltyAppService) GetLoyaltyAccount(loyaltyId string, sessionId string) (*dtos.LoyaltyAccountResponseDto, error) {
 
 	httpReq, err := http.NewRequest("GET", loyaltyBaseUrl+"/loyalty/accounts/"+loyaltyId, nil)
 	if err != nil {
 		log.Printf("%s : Error creating get loyalty account request: %v", sessionId, err)
-		return dtos.LoyaltyAccountResponseDto{}, err
+		return nil, err
 	}
 
 	httpReq.Header.Set("Authorization", "Bearer "+loyaltyAccessToken)
@@ -409,27 +410,27 @@ func (s *LoyaltyAppService) GetLoyaltyAccount(loyaltyId string, sessionId string
 	response, err := client.Do(httpReq)
 	if err != nil {
 		log.Printf("%s : Error sending request to loyalty API: %v", sessionId, err)
-		return dtos.LoyaltyAccountResponseDto{}, err
+		return nil, err
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s : Error reading response body: %v", sessionId, err)
-		return dtos.LoyaltyAccountResponseDto{}, err
+		return nil, err
 	}
 
 	log.Printf("%s : Get loyalty account API response: %s", sessionId, string(responseBody))
 	if response.StatusCode != http.StatusOK {
 		log.Printf("%s : Error getting loyalty account: %s", sessionId, responseBody)
-		return dtos.LoyaltyAccountResponseDto{}, fmt.Errorf("error getting loyalty account: %s", responseBody)
+		return nil, fmt.Errorf("error getting loyalty account: %s", responseBody)
 	}
 
 	loyaltyAccountResponse := dtos.LoyaltyAccountResponseDto{}
 	if err := json.Unmarshal(responseBody, &loyaltyAccountResponse); err != nil {
 		log.Printf("%s : Error unmarshalling loyalty account response: %v", sessionId, err)
-		return dtos.LoyaltyAccountResponseDto{}, err
+		return nil, err
 	}
 
-	return loyaltyAccountResponse, nil
+	return &loyaltyAccountResponse, nil
 }

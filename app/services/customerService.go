@@ -19,8 +19,8 @@ func init() {
 }
 type LoyaltyAppServiceInterface interface {
 	CreateNewLoyaltyCustomer(customer models.Customer, sessionId string) (string, error)
-	CreateNewLoyaltyAccount(loyaltyCustomerId string, phoneNumber string, sessionId string) (*models.LoyaltyAccountResponseModel, error)
-	GetLoyaltyAccount(loyaltyId string, sessionId string) (*models.LoyaltyAccountResponseModel, error)
+	CreateNewLoyaltyAccount(loyaltyCustomerId string, phoneNumber string, sessionId string) (*dtos.LoyaltyAccountResponseDto, error)
+	GetLoyaltyAccount(loyaltyId string, sessionId string) (*dtos.LoyaltyAccountResponseDto, error)
 }
 
 type CustomerService struct {
@@ -47,7 +47,7 @@ func (s *CustomerService) CreateNewCustomer(customer models.Customer, sessionId 
 		return err
 	}
 
-	var loyaltyAccount *models.LoyaltyAccountResponseModel
+	var loyaltyAccount *dtos.LoyaltyAccountResponseDto
 
 	if loyaltyCustomer != "" {
 		loyaltyAccount, err = s.loyaltyService.CreateNewLoyaltyAccount(loyaltyCustomer, customer.Phone_number, sessionId)
@@ -106,7 +106,7 @@ func (s *CustomerService) CustomerLogin(loginDto dtos.LoginDto, sessionId string
 	return loginResponse, nil
 }
 
-func (s *CustomerService) GetCustomerLoyaltyAccount(customerId string, sessionId string) (*models.LoyaltyAccountResponseModel, error) {
+func (s *CustomerService) GetCustomerLoyaltyAccount(customerId string, sessionId string) (*dtos.LoyaltyAccountResponseDto, error) {
 
 	customerLoyaltyId, err := s.transactionRepo.GetCustomerLoyaltyId(customerId, sessionId)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *CustomerService) GetCustomerLoyaltyAccount(customerId string, sessionId
 	return loyaltyAccount, nil
 }
 
-func (s *CustomerService) GetCustomerTransactionHistory(customerId string, sessionId string) (*models.Transaction, error) {
+func (s *CustomerService) GetCustomerTransactionHistory(customerId string, sessionId string) ([]models.Transaction, error) {
 
 	customerHistory, err := s.transactionRepo.GetCustomerTransactionHistory(customerId, sessionId)
 	if err != nil {
