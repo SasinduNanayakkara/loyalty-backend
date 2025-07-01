@@ -20,7 +20,7 @@ This is a backend service built using the [Gin](https://github.com/gin-gonic/gin
 ### 1. Clone the repository
 
 ```bash
-git clone <https://github.com/SasinduNanayakkara/loyalty-backend>
+git clone https://github.com/SasinduNanayakkara/loyalty-backend
 ```
 
 ## Envs
